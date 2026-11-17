@@ -26,6 +26,16 @@ DDL = (
        job_id TEXT NOT NULL REFERENCES jobs,ordinal INTEGER NOT NULL,
        file_id TEXT NOT NULL REFERENCES files,input_index INTEGER NOT NULL,
        row_index INTEGER NOT NULL,document TEXT NOT NULL,PRIMARY KEY(job_id,ordinal))""",
+    """CREATE TABLE IF NOT EXISTS projection_exports(
+       export_id TEXT PRIMARY KEY,job_id TEXT NOT NULL REFERENCES jobs,
+       reader_revision INTEGER NOT NULL REFERENCES schema_revisions,
+       writer_revision INTEGER NOT NULL REFERENCES schema_revisions,
+       file_id TEXT NOT NULL REFERENCES files,selection TEXT NOT NULL,
+       row_count INTEGER NOT NULL,receipt TEXT NOT NULL,source_receipt TEXT NOT NULL)""",
+    """CREATE TABLE IF NOT EXISTS projection_rows(
+       export_id TEXT NOT NULL REFERENCES projection_exports,ordinal INTEGER NOT NULL,
+       source_file_id TEXT NOT NULL,input_index INTEGER NOT NULL,row_index INTEGER NOT NULL,
+       PRIMARY KEY(export_id,ordinal))""",
 )
 
 

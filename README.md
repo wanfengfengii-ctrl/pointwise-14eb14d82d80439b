@@ -11,8 +11,9 @@ Python 3.11 标准库实现的模式化数据湖归档组件，无网络依赖�
     python3.11 -B -m unittest discover -s tests -t . -v
     python3.11 -B -m lake.demo
 
-demo 使用内存 SQLite，展示历史加工、同名模式替换、固定任务、
-提交前异常回滚及重试、enum 不兼容整批失败。磁盘重开回归使用测试临时目录。
+demo 使用临时磁盘 SQLite，展示历史加工、同名模式替换、固定任务、
+提交前异常回滚及重试、enum 不兼容整批失败，并导出一个两状态递归投影、
+关闭连接后重开读取同一导出。磁盘重开回归使用测试临时目录。
 创建可携带的完整旧库：
 
     python3.11 -B -m lake.samples ./sample-v1.sqlite
@@ -34,11 +35,18 @@ demo 使用内存 SQLite，展示历史加工、同名模式替换、固定任�
         result = lake.run_job("daily")
         assert result["rows"] == [{"id": 2}, {"id": 2}]
 
-完整格式、公开接口及错误语义见 CONTRACT.md；离线编解码格式见 PORTS.md。
+        selection = {"root": "all", "states": {
+            "all": {"record": "Reading", "fields": {"id": {}}}}}
+        meta = lake.export_projection("daily", selection)
+        assert lake.read_projection(meta["export_id"])["rows"] == [{"id": 2}, {"id": 2}]
+
+完整格式、公开接口及错误语义见 CONTRACT.md；离线编解码格式见 PORTS.md；
+投影导出的绑定、selection 语法与核账说明见 PROJECTION.md 和 HANDOFF.md。
 
 目录由 lake/schema_catalog.py 持有，文件由 lake/file_archive.py 持有，
 任务绑定由 lake/job_registry.py 持有。lake/materializer.py 通过 SDK1
 完成写读解析，lake/result_store.py 在同一事务发布成果与终态。
+lake/projection.py 提供固定成果的有限状态投影导出与读取。
 lake/db.py 提供真实 SQLite 事务及提交前故障点。
 
 正常归档格式是 storage_version=1，使用 vendor/sdk1.py。
